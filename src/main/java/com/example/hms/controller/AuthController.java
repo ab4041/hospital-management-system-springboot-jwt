@@ -1,5 +1,6 @@
 package com.example.hms.controller;
 
+import com.example.hms.config.JwtService;
 import com.example.hms.dto.AuthRequest;
 import com.example.hms.entity.User;
 import com.example.hms.repository.UserRepository;
@@ -15,6 +16,7 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
@@ -32,5 +34,21 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok("User registered successfully");
+    }
+
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest().body("Invalid password");
+        }
+
+        String token = jwtService.generateToken(user.getEmail());
+
+        return ResponseEntity.ok(token);
     }
 }
